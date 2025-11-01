@@ -1,0 +1,146 @@
+﻿@using DataAccess.Models
+@model List<BasketItems>
+@{
+    ViewData["Title"] = "Basket";
+}
+
+<div class="container">
+    <h2>سبد خرید</h2>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <table id="basketTable">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>تعداد</th>
+                    <th>قیمت</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr id="basket_@item.Id" data-price="@item.Price">
+                        <td>
+                            <div class="ImgAndName">
+                                <img src="/api/File/GetFile?filename=@item.Book.Img" alt="@item.Book.Title" class="product-img" style="width:60px;height:60px;border-radius:8px;">
+                                <p>@item.Book.Title</p>
+                            </div>
+                        </td>
+                        <td>@item.Qty</td>
+                        <td class="subtotal">@item.Price.ToString("N0") تومان</td>
+                        <td>
+                            <i onclick="Remove(@item.Id)" style="color:red; cursor:pointer" class="fa fa-trash"></i>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p id="emptyBasket" class="text-center text-muted">سبد خرید شما خالی است.</p>
+    }
+</div>
+
+<form asp-action="Pay" method="post">
+<div class="container">
+    <div class="user-info">
+        <h3>اطلاعات کاربر</h3>
+        <textarea  name="Address" rows="5" placeholder="آدرس"></textarea>
+        <input name="Mobile" type="text" placeholder="شماره تلفن">
+    </div>
+    <div class="total">
+        قیمت کل: <span id="totalPrice">@Model.Sum(x => x.Price).ToString("N0")</span> تومان
+    </div>
+    <button type="submit" style="margin-top: 10px;" class="cartBtn">پرداخت</button>
+</div>
+</form>
+@section Scripts {
+    <script>
+        // محاسبه و بروزرسانی قیمت کل
+        function updateTotal() {
+            let rows = document.querySelectorAll("#basketTable tbody tr");
+            let total = 0;
+            rows.forEach(row => {
+                total += parseFloat(row.dataset.price);
+            });
+            document.getElementById("totalPrice").textContent = total.toLocaleString('fa-IR');
+        }
+
+        // تابع حذف محصول از سبد خرید
+        function Remove(id) {
+            fetch('/Order/RemoveBasket', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: "موفقیت‌آمیز",
+                        text: "محصول از سبد خرید حذف شد",
+                        icon: "success",
+                        confirmButtonText: "باشه"
+                    });
+
+                    // حذف ردیف از جدول
+                    const row = document.getElementById("basket_" + id);
+                    if (row) row.remove();
+
+                    // بروزرسانی مجموع
+                    updateTotal();
+
+                    // اگر جدول خالی شد
+                    if (document.querySelectorAll("#basketTable tbody tr").length === 0) {
+                        document.getElementById("basketTable").remove();
+                        document.querySelector(".container").insertAdjacentHTML("beforeend", <p id="emptyBasket" class="text-center text-muted">سبد خرید شما خالی است.</p>);
+                    }
+
+                } else {
+                    Swal.fire({
+                        title: "خطا",
+                        text: "عملیات حذف انجام نشد",
+                        icon: "error",
+                        confirmButtonText: "باشه"
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        // تابع افزودن محصول به سبد خرید
+        function AddToBasket(bookId, qty) {
+            fetch('/Order/AddToBasket', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId: bookId, qty: qty })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.res === false) {
+                    Swal.fire({
+                        title: "ورود به سیستم لازم است",
+                        text: "برای افزودن محصول باید وارد حساب کاربری شوید",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "ورود",
+                        cancelButtonText: "انصراف"
+                    }).then(result => {
+                        if (result.isConfirmed)
+                            window.location.href = '/Account/Login';
+                    });
+                } else {
+                    Swal.fire({
+                        title: "موفقیت‌آمیز",
+                        text: "محصول به سبد خرید اضافه شد",
+                        icon: "success",
+                        confirmButtonText: "باشه"
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+}

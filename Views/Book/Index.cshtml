@@ -1,0 +1,146 @@
+﻿@using DataAccess.Models
+@model Book
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    .myHeader {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .headerItems {
+        flex: 1;
+    }
+
+    .headImg {
+        max-width: 400px;
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .bookPrice {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-right: 4px solid #716add;
+    }
+
+    .cartBtn {
+        display: inline-block;
+        padding: 12px 30px;
+        background: #716add;
+        color: white !important;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+        .cartBtn:hover {
+            background: #5a54c7;
+            transform: translateY(-2px);
+        }
+
+    #countInput {
+        width: 80px;
+        padding: 8px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        text-align: center;
+        margin: 0 10px;
+    }
+</style>
+
+<div class="myHeader">
+    <div class="headerItems">
+        <img class="headImg" src="/api/File/GetFile?filename=@Model.Img" alt="@Model.Title">
+    </div>
+
+    <input type="hidden" id="bookId" value="@Model.Id" />
+
+    <div class="headerItems">
+        <h1>@Model.Title</h1>
+        <p>@Model.Description</p>
+        <p>@Model.Author?.Name</p>
+
+        <div class="bookPrice">
+            <strong>@Model.Price تومان</strong>
+            <div>
+                تعداد : <input id="countInput" type="number" min="1" value="1">
+            </div>
+        </div>
+
+        @if (Model.IsAvailable)
+        {
+            <a onclick="AddToBasket()" class="cartBtn" style="margin-top: 15px;">
+                افزودن به سبد
+            </a>
+        }
+        else
+        {
+            <a class="cartBtn" style="margin-top: 15px;">
+                اتمام موجودی
+            </a>
+        }
+    </div>
+</div>
+
+<script>
+    function AddToBasket() {
+        var bookId = document.getElementById("bookId").value;
+        var qty = document.getElementById("countInput").value;
+
+        var data = {
+            bookId: bookId,
+            qty: qty
+        };
+
+        fetch('/Order/AddToBasket', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.res == false) {
+                Swal.fire({
+                    title: "شما باید در سایت لاگین کنید",
+                    text: "برای افزودن محصول به سبد خرید باید وارد حساب کاربری خود شوید",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "ورود به سیستم",
+                    cancelButtonText: "انصراف"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/Account/Login';
+                    }
+                });
+            } 
+            else {
+                Swal.fire({
+                    title: "موفقیت آمیز",
+                    text: "محصول به سبد خرید اضافه شد",
+                    icon: "success",
+                    confirmButtonText: "باشه"
+                });
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+</script>
