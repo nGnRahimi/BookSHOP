@@ -25,37 +25,6 @@ namespace BookSHOP.Controllers
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
        [Authorize]
         public IActionResult aboutUs()
         {
